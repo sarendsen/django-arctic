@@ -568,6 +568,8 @@ class DataListView(TemplateView, ListMixin):
             page = int(self.request.GET.get(self.page_kwarg))
         except TypeError:
             page = 1
+
+        self.dataset.order_by(self.request.GET.getlist('order', []))
         return self.dataset.get(page, self.paginate_by)
 
     def get_list_items(self):

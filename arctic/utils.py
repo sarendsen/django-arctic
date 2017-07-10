@@ -2,6 +2,7 @@ from __future__ import (absolute_import, unicode_literals)
 
 from collections import OrderedDict
 import importlib
+import urllib
 
 from django.conf import settings
 from django.core import urlresolvers
@@ -11,6 +12,7 @@ from django.core.urlresolvers import NoReverseMatch
 
 def is_active(path, path_to_check):
     return path.startswith(path_to_check)
+
 
 # TODO: menu needs to hide entries not available to a certain user role
 # by getting the view class from the named url we can check which permissions
@@ -41,7 +43,7 @@ def menu(menu_config=None, **kwargs):
             # icons are optional
             icon = None
             if (len(menu_entry) >= 3) and \
-               (not type(menu_entry[2]) in (list, tuple)):
+                    (not type(menu_entry[2]) in (list, tuple)):
                 icon = menu_entry[2]
             menu_dict[menu_entry[0]] = {
                 'url': menu_entry[1],
@@ -205,10 +207,11 @@ def get_field_class(qs, field_name):
 
 
 class RemoteDataSet():
+    ORDER_ASC = 0
+    ORDER_DESC = 1
     url_template = '{filters}{fields}{order}{paginate}'
     paginate_template = '&offset={}&limit={}'
-    order_separator = ','
-    order_template = '&order={}'
+    order_values = []
     fields_separator = ','
     fields_template = '&fields={}'
     filters_template = '{}'
@@ -226,11 +229,29 @@ class RemoteDataSet():
             self._options['fields'] = self.fields_template.format(fields_str)
         return self
 
-    def order_by(self, order):
-        if order:
-            order_str = self.order_separator.join(order)
-            self._options['order'] = self.order_template.format(order_str)
+    def order_by(self, orders):
+        self.order_values = []
+        if orders:
+            for order in orders:
+                self.order_values.append(
+                    (order.lstrip('-'), self.ORDER_DESC if order[0] == '-' else self.ORDER_ASC)
+                )
+            self._options['order'] = '&' + urllib.parse.urlencode(self.order_params())
         return self
+
+    def order_params(self):
+        """
+        Convert current ordering values to GET params for the REST API.
+        For example [('name', ORDER_ASC),('price', ORDER_DESC)] to {'order': ['name', '-price']}
+        
+        """
+        params = {}
+        if self.order_values:
+            values = []
+            for field, order_type in self.order_values:
+                values.append("{}{}".format("" if order_type == self.ORDER_ASC else '-', field))
+            params = {'order': ",".join(values)}
+        return params
 
     def filter(self, **kwargs):
         if kwargs:
