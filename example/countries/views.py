@@ -25,7 +25,8 @@ class CountriesDataSet(RemoteDataSet):
     def order_params(self):
         """
         Convert current ordering values to GET params for the REST API.
-        For example [('name', ORDER_DESC)] to {'ascending': 1, 'sort': 'mileage']}
+        For example [('name', DESC)] to {'ascending': 1, 'sort': 'mileage']}
+        This endpoint supports ordering by one field only.
         """
         params = {}
         mapping = {
@@ -34,7 +35,7 @@ class CountriesDataSet(RemoteDataSet):
         }
         if self.order_values:
             field, order_type = self.order_values[0]
-            if order_type == self.ORDER_DESC:
+            if order_type == self.DESC:
                 params['ascending'] = 1
             params['sort'] = mapping.get(field, 'price_public')
         return params

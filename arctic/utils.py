@@ -207,8 +207,8 @@ def get_field_class(qs, field_name):
 
 
 class RemoteDataSet():
-    ORDER_ASC = 0
-    ORDER_DESC = 1
+    ASC = 'asc'
+    DESC = 'desc'
     url_template = '{filters}{fields}{order}{paginate}'
     paginate_template = '&offset={}&limit={}'
     order_values = []
@@ -234,7 +234,7 @@ class RemoteDataSet():
         if orders:
             for order in orders:
                 self.order_values.append(
-                    (order.lstrip('-'), self.ORDER_DESC if order[0] == '-' else self.ORDER_ASC)
+                    (order.lstrip('-'), self.DESC if order[0] == '-' else self.ASC)
                 )
             self._options['order'] = '&' + urllib.parse.urlencode(self.order_params())
         return self
@@ -242,14 +242,14 @@ class RemoteDataSet():
     def order_params(self):
         """
         Convert current ordering values to GET params for the REST API.
-        For example [('name', ORDER_ASC),('price', ORDER_DESC)] to {'order': ['name', '-price']}
+        For example [('name', ASC),('price', DESC)] to {'order': ['name', '-price']}
         
         """
         params = {}
         if self.order_values:
             values = []
             for field, order_type in self.order_values:
-                values.append("{}{}".format("" if order_type == self.ORDER_ASC else '-', field))
+                values.append("{}{}".format("" if order_type == self.ASC else '-', field))
             params = {'order': ",".join(values)}
         return params
 
