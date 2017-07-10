@@ -33,11 +33,10 @@ class CountriesDataSet(RemoteDataSet):
             "mileage": "mileage",
         }
         if self.order_values:
-            values = []
             field, order_type = self.order_values[0]
             if order_type == self.ORDER_DESC:
                 params['ascending'] = 1
-            params['sort'] = mapping.get(field, 'prijs')
+            params['sort'] = mapping.get(field, 'price_public')
         return params
 
     def __len__(self):
