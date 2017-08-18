@@ -40,6 +40,7 @@ class View(RoleAuthentication, base.View):
     requires_login = True
     urls = {}
     form_diplay = None
+    tabular_label_size = None
 
     def dispatch(self, request, *args, **kwargs):
         """

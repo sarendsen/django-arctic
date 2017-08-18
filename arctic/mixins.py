@@ -81,6 +81,7 @@ class FormMixin(object):
     """
     use_widget_overloads = True
     form_display = None
+    tabular_label_size = None
     layout = None
     _fields = []
     readonly_fields = None
@@ -326,6 +327,7 @@ class FormMixin(object):
     def get_context_data(self, **kwargs):
         context = super(FormMixin, self).get_context_data(**kwargs)
         context['form_display'] = self.get_form_display()
+        context['tabular_label_size'] = self.get_tabular_label_size()
         try:
             i = 0
             for formset in context['inlines']:
@@ -351,6 +353,16 @@ class FormMixin(object):
                 'form_display property needs to be one of {}'.format(
                     valid_options))
         return arctic_setting('ARCTIC_FORM_DISPLAY', valid_options)
+
+    def get_tabular_label_size(self):
+        valid_options = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
+        if self.tabular_label_size:
+            if self.tabular_label_size in valid_options:
+                return self.tabular_label_size
+            raise ImproperlyConfigured(
+                'tabule_label_size property needs to be one of {}'.format(
+                    valid_options))
+        return arctic_setting('ARCTIC_TABULAR_LABEL_SIZE', valid_options)
 
 
 class ListMixin(object):
