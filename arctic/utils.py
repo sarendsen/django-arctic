@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, unicode_literals)
 
 from collections import OrderedDict
+from copy import deepcopy
 import importlib
 
 from django.conf import settings
@@ -12,7 +13,9 @@ from . import defaults
 
 
 def is_active(path, path_to_check):
-    return path.startswith(path_to_check)
+    if not path_to_check:
+        return False
+    return path == path_to_check
 
 # TODO: menu needs to hide entries not available to a certain user role
 # by getting the view class from the named url we can check which permissions
@@ -36,26 +39,24 @@ def menu(menu_config=None, **kwargs):
         if type(menu_entry) in (list, tuple):
 
             # check permission based on named_url
-            if not view_from_url(menu_entry[1]).has_permission(user):
-                continue
+            path = None
+            if menu_entry[1]:
+                if not view_from_url(menu_entry[1]).has_permission(user):
+                    continue
 
-            path = urlresolvers.reverse(menu_entry[1])
+                path = urlresolvers.reverse(menu_entry[1])
             # icons and collapse are optional
             icon = None
-            collapse = False
             if (len(menu_entry) >= 3) and \
                (not type(menu_entry[2]) in (list, tuple)):
                 icon = menu_entry[2]
-            if (len(menu_entry) >= 4) and \
-               (not type(menu_entry[3]) in (list, tuple)):
-                collapse = True
+            active_weight = len(path) if path else 0
             menu_dict[menu_entry[0]] = {
                 'url': menu_entry[1],
                 'icon': icon,
-                'collapse': collapse,
                 'submenu': None,
                 'active': is_active(request.path, path),
-                'active_weight': len(path)
+                'active_weight': active_weight
             }
 
             # check if the last item in a menu entry is a submenu
@@ -228,7 +229,7 @@ def arctic_setting(setting_name, valid_options=None):
 
 
 class RemoteDataSet():
-    url_template = '{filters}{fields}{order}{paginate}'
+    url_template = '?{filters}{fields}{order}{paginate}'
     paginate_template = '&offset={}&limit={}'
     order_separator = ','
     order_template = '&order={}'
@@ -247,13 +248,13 @@ class RemoteDataSet():
         if fields:
             fields_str = self.fields_separator.join(fields)
             self._options['fields'] = self.fields_template.format(fields_str)
-        return self
+        return deepcopy(self)
 
     def order_by(self, order):
         if order:
             order_str = self.order_separator.join(order)
             self._options['order'] = self.order_template.format(order_str)
-        return self
+        return deepcopy(self)
 
     def filter(self, **kwargs):
         if kwargs:
@@ -263,13 +264,14 @@ class RemoteDataSet():
                     key=key,
                     value=value)
             self._options['filters'] = self.filters_template.format(filters)
-        return self
+        return deepcopy(self)
 
-    def get_url(self, page, page_size):
+    def get_url(self, start, stop):
+        self._options['paginate'] = self.paginate_template.format(start, stop)
         url = self.url_template.format(**self._options)
         return url.replace('?&', '?')
 
-    def get(self, page, page_size):
+    def get(self, start, stop):
         pass
 
     def __len__(self):
@@ -277,3 +279,14 @@ class RemoteDataSet():
 
     def __getitem__(self, slice):
         return self.get(slice.start, slice.stop)
+
+
+def offset_limit(func):
+    """
+    Decorator that converts python slicing to offset and limit
+    """
+    def func_wrapper(self, start, stop):
+        offset = start
+        limit = stop - start
+        return func(self, offset, limit)
+    return func_wrapper

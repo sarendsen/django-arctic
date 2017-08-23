@@ -59,7 +59,15 @@
             position: relative;
             top: 12px;
             left: 0;
+
+            &--inline {
+                top: -6px;;
+            }
         }
+    }
+
+    .styled-select select {
+        padding-top: 1.2rem !important;
     }
 
     .styled-select label,
@@ -102,5 +110,3 @@
     }
 
 }
-
-

@@ -14,7 +14,7 @@ from collections import OrderedDict
 
 from .forms import SimpleSearchForm
 from .loading import (get_role_model, get_user_role_model)
-from .utils import arctic_setting, view_from_url
+from .utils import (arctic_setting, view_from_url)
 from .widgets import SelectizeAutoComplete
 
 Role = get_role_model()
@@ -269,6 +269,20 @@ class FormMixin(object):
     def update_form_fields(self, form):
         widget_overloads = arctic_setting('ARCTIC_WIDGET_OVERLOADS')
         widgets_to_be_overloaded = widget_overloads.keys()
+        if hasattr(form, 'form_classes'):
+            form_names = form.form_classes.keys()
+            for form_name in form_names:
+                new_form = self._update_form_fields(
+                    form[form_name], widget_overloads,
+                    widgets_to_be_overloaded)
+                setattr(form, form_name, new_form)
+            return form
+
+        return self._update_form_fields(form, widget_overloads,
+                                        widgets_to_be_overloaded)
+
+    def _update_form_fields(self, form, widget_overloads,
+                            widgets_to_be_overloaded):
         for field in form.fields:
             field_class_name = form.fields[field].__class__.__name__
             if field_class_name == 'ModelChoiceField':
@@ -374,6 +388,12 @@ class ListMixin(object):
     action_links = []  # "Action" links on item level. For example "Edit"
     tool_links = []   # Global links. For Example "Add object"
     default_ordering = []  # Default ordering, e.g. ['title', '-brand']
+    search_fields = []
+    simple_search_form = None  # Simple search form if search_fields is defined
+    advanced_search_form = None  # Custom form for advanced search
+    tool_links_icon = 'fa-wrench'
+    max_embeded_list_items = 10  # when displaying a list in a column
+    primary_key = 'pk'
 
     def ordering_url(self, field):
         """
@@ -410,10 +430,13 @@ class ListMixin(object):
 
         return (path + '?' + query_params.urlencode(safe=','), direction)
 
-    def get_fields(self):
+    def get_fields(self, strip_labels=False):
         """
         Hook to dynamically change the fields that will be displayed
         """
+        if strip_labels:
+            return [f[0] if type(f) in (tuple, list) else f
+                    for f in self.fields]
         return self.fields
 
     def get_ordering_fields(self):
@@ -421,6 +444,9 @@ class ListMixin(object):
         Hook to dynamically change the fields that can be ordered
         """
         return self.ordering_fields
+
+    def get_tool_links_icon(self):
+        return self.tool_links_icon
 
     def get_filter_fields(self):
         """
@@ -448,6 +474,18 @@ class ListMixin(object):
 
     def get_field_classes(self):
         return self.field_classes
+
+    def _get_field_actions(self, obj):
+        field_actions = self.get_action_links()
+        if field_actions:
+            actions = []
+            for field_action in field_actions:
+                actions.append({'label': field_action['label'],
+                                'icon': field_action['icon'],
+                                'url': self._reverse_field_link(
+                                    field_action['url'], obj)})
+            return {'type': 'actions', 'actions': actions}
+        return None
 
     def get_action_links(self):
         if not self.action_links:

@@ -1,5 +1,5 @@
 # options are 'float-label', 'stacked' or 'tabular'
-ARCTIC_FORM_DISPLAY = 'stacked'
+ARCTIC_FORM_DISPLAY = 'float-label'
 
 ARCTIC_TABULAR_LABEL_SIZE = '2'
 
