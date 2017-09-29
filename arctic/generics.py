@@ -389,7 +389,6 @@ class ListView(View, ListMixin, base.ListView):
     def get_list_items(self, objects):
         self.has_action_links = False
         has_confirm_links = hasattr(self, 'confirm_links')
-        print('has_confirm_links = {}'.format(has_confirm_links))
         items = []
         if not self.get_fields():
             for obj in objects:
