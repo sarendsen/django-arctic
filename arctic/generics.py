@@ -388,6 +388,8 @@ class ListView(View, ListMixin, base.ListView):
 
     def get_list_items(self, objects):
         self.has_action_links = False
+        has_confirm_links = hasattr(self, 'confirm_links')
+        print('has_confirm_links = {}'.format(has_confirm_links))
         items = []
         if not self.get_fields():
             for obj in objects:
@@ -421,6 +423,8 @@ class ListView(View, ListMixin, base.ListView):
                 if field_name in field_links.keys():
                     field['url'] = self._reverse_field_link(
                         field_links[field_name], obj)
+                    self.add_confirm_link(has_confirm_links, field,
+                        field_links[field_name])
                 if field_name in field_classes:
                     field['class'] = field_classes[field_name]
                 row.append(field)
@@ -430,6 +434,10 @@ class ListView(View, ListMixin, base.ListView):
                 self.has_action_links = True
             items.append(row)
         return items
+    
+    def add_confirm_link(self, has_confirm_link, field, field_url_name):
+        if has_confirm_link and field_url_name in self.confirm_links:
+            field['confirm'] = self.confirm_links[field_url_name]
 
     def get_field_value(self, field_name, obj):
         # first try to find a virtual field

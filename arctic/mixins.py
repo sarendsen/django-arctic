@@ -453,6 +453,7 @@ class ListMixin(object):
 
     def _get_field_actions(self, obj):
         field_actions = self.get_action_links()
+        has_confirm_links = hasattr(self, 'confirm_links')
         if field_actions:
             actions = []
             for field_action in field_actions:
@@ -460,6 +461,10 @@ class ListMixin(object):
                                 'icon': field_action['icon'],
                                 'url': self._reverse_field_link(
                                     field_action['url'], obj)})
+                field_url_name = field_action['url']
+                if has_confirm_links and field_url_name in self.confirm_links:
+                    actions[0].update({'confirm':
+                                      self.confirm_links[field_url_name]})
             return {'type': 'actions', 'actions': actions}
         return None
 
