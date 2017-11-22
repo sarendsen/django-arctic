@@ -361,6 +361,7 @@ class ListMixin(object):
     field_links = {}
     field_classes = {}
     action_links = []  # "Action" links on item level. For example "Edit"
+    actions = [] # Bulk actions. For example "Delete"
     tool_links = []   # Global links. For Example "Add object"
     default_ordering = []  # Default ordering, e.g. ['title', '-brand']
     search_fields = []
@@ -517,6 +518,9 @@ class ListMixin(object):
         Hook to dynamically change the advanced search form
         """
         return self.advanced_search_form
+
+    def get_actions_form(self):
+        form = forms.Form()
 
 
 class RoleAuthentication(object):

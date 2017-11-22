@@ -2,6 +2,7 @@ from __future__ import (division, unicode_literals)
 from collections import OrderedDict
 
 import extra_views
+from django.db.models.fields import BLANK_CHOICE_DASH
 from django.conf import settings
 from django.contrib.auth import (authenticate, login, logout)
 from django.contrib.auth.forms import AuthenticationForm
@@ -10,9 +11,12 @@ from django.core.exceptions import (FieldDoesNotExist, ImproperlyConfigured,
 from django.core.paginator import InvalidPage
 from django.core.urlresolvers import (NoReverseMatch, reverse)
 from django.db.models.deletion import (Collector, ProtectedError)
+from django import forms
 from django.forms.widgets import Media
 from django.http import Http404
 from django.shortcuts import (redirect, render, resolve_url)
+from django.utils import six
+from django.utils.encoding import force_text
 from django.utils.formats import get_format
 from django.utils.http import (is_safe_url, quote)
 from django.utils.text import capfirst
@@ -281,17 +285,98 @@ class DetailView(View, base.DetailView):
         return context
 
 
+class ActionForm(forms.Form):
+    action = forms.ChoiceField(label=_('Action:'))
+    select_across = forms.BooleanField(
+        label='',
+        required=False,
+        initial=0,
+        widget=forms.HiddenInput({'class': 'select-across'}),
+    )
+
+checkbox = forms.CheckboxInput({'class': 'action-select'}, lambda value: False)
+
+
 class ListView(View, ListMixin, base.ListView):
     """
     Custom listview. Adding filter, sorting and display logic.
     """
     prefix = ''  # Prefix for embedding multiple list views in detail view
+    action_form = ActionForm
 
     def get(self, request, *args, **kwargs):
         objects = self.get_object_list()
         context = self.get_context_data(object_list=objects)
 
         return self.render_to_response(context)
+
+    def get_action_form(self, request):
+        if self.actions:
+            action_form = self.action_form(auto_id=None)
+            action_form.fields['action'].choices = self.get_action_choices(request)
+        else:
+            return None
+
+    def get_action_checkbox(self, obj):
+        """
+        A list_display column containing a checkbox widget.
+        """
+        return checkbox.render('_selected_action', force_text(obj.pk))
+        action_checkbox.short_description = mark_safe('<input type="checkbox" id="action-toggle" />')
+
+    def get_action_choices(self, request, default_choices=BLANK_CHOICE_DASH):
+        """
+        Return a list of choices for use in a form object.  Each choice is a
+        tuple (name, description).
+        """
+        choices = [] + default_choices
+        for func, name, description in six.itervalues(self.get_actions(request)):
+            choice = (name, description)
+            choices.append(choice)
+        return choices
+
+    def get_action(self, action):
+        """
+        Return a given action from a parameter, which can either be a callable,
+        or the name of a method on the ModelAdmin.  Return is a tuple of
+        (callable, name, description).
+        """
+        # If the action is a callable, just use it.
+        if callable(action):
+            func = action
+            action = action.__name__
+
+        # Next, look for a method. Grab it off self.__class__ to get an unbound
+        # method instead of a bound one; this ensures that the calling
+        # conventions are the same for functions and methods.
+        elif hasattr(self.__class__, action):
+            func = getattr(self.__class__, action)
+
+        if hasattr(func, 'short_description'):
+            description = func.short_description
+        else:
+            description = capfirst(action.replace('_', ' '))
+        return func, action, description
+
+    def get_actions(self, request):
+        if self.actions is None:
+            return OrderedDict()
+
+        actions = []
+
+        for func in self.actions:
+            actions.append(self.get_action(func))
+
+        # get_action might have returned None, so filter any of those out.
+        actions = filter(None, actions)
+
+        # Convert the actions into an OrderedDict keyed by name.
+        actions = OrderedDict(
+            (name, (func, name, desc))
+            for func, name, desc in actions
+        )
+
+        return actions
 
     def get_object_list(self):
         qs = self.get_queryset()
@@ -380,8 +465,12 @@ class ListView(View, ListMixin, base.ListView):
         fields = self.get_fields(strip_labels=True)
         field_links = self.get_field_links()
         field_classes = self.get_field_classes()
+
         for obj in objects:
             row = []
+            if self.actions:
+                action_field = [{'type': 'field', 'value': self.get_action_checkbox(obj)}]
+                row = action_field + row
 
             for field_name in fields:
                 field = {'type': 'field', 'field': field_name}
@@ -408,6 +497,7 @@ class ListView(View, ListMixin, base.ListView):
                 if field_name in field_classes:
                     field['class'] = field_classes[field_name]
                 row.append(field)
+
             actions = self._get_field_actions(obj)
             if actions:
                 row.append(actions)
@@ -465,6 +555,7 @@ class ListView(View, ListMixin, base.ListView):
         # self.has_action_links is set in get_list_items
         context['has_action_links'] = self.has_action_links
         context['tool_links_icon'] = self.get_tool_links_icon()
+        context['action_form']= self.get_action_form(self.request)
         if self.get_simple_search_form():
             context['simple_search_form'] = \
                 self.get_simple_search_form()(data=self.request.GET)
