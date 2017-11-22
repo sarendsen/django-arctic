@@ -286,7 +286,7 @@ class DetailView(View, base.DetailView):
 
 
 class ActionForm(forms.Form):
-    action = forms.ChoiceField(label=_('Action:'))
+    action = forms.ChoiceField(label='')
     select_across = forms.BooleanField(
         label='',
         required=False,
@@ -314,6 +314,7 @@ class ListView(View, ListMixin, base.ListView):
         if self.actions:
             action_form = self.action_form(auto_id=None)
             action_form.fields['action'].choices = self.get_action_choices(request)
+            return action_form
         else:
             return None
 

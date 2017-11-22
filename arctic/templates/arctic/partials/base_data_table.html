@@ -21,6 +21,13 @@
             {% endif %}
         </div>
     {% endblock %}
+
+    {% if action_form %}
+        <form action="" method="POST" class="col-6 col-md-3 push-left list-inline-search">
+            {{ action_form }}
+        </form>
+    {% endif %}
+
     {% if simple_search_form or advanced_search_form %}
         <form action="" method="GET" class="col-12 col-md-6 push-right list-inline-search">
             {% block search_form %}
