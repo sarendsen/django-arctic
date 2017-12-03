@@ -4,11 +4,15 @@ Basic mixins for generic class based views.
 
 import importlib
 
+from django.db.models.fields import BLANK_CHOICE_DASH
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import (ImproperlyConfigured, PermissionDenied)
 from django.core.urlresolvers import reverse
 from django.utils import six
+from django.utils.encoding import force_text
+from django.utils.text import capfirst
+from django import forms
 
 from collections import OrderedDict
 
@@ -354,6 +358,18 @@ class FormMixin(object):
         return context
 
 
+class ActionForm(forms.Form):
+    action = forms.ChoiceField(label='', widget=forms.HiddenInput())
+    select_across = forms.BooleanField(
+        label='',
+        required=False,
+        initial=0,
+        widget=forms.HiddenInput({'class': 'select-across'}),
+    )
+
+checkbox = forms.CheckboxInput({'class': 'action-select form-control'}, lambda value: False)
+
+
 class ListMixin(object):
     template_name = 'arctic/base_list.html'
     fields = None  # Which fields should be shown in listing
@@ -362,6 +378,7 @@ class ListMixin(object):
     field_classes = {}
     action_links = []  # "Action" links on item level. For example "Edit"
     actions = [] # Bulk actions. For example "Delete"
+    action_form = ActionForm
     tool_links = []   # Global links. For Example "Add object"
     default_ordering = []  # Default ordering, e.g. ['title', '-brand']
     search_fields = []
@@ -521,6 +538,75 @@ class ListMixin(object):
 
     def get_actions_form(self):
         form = forms.Form()
+
+    def get_action_form(self, request):
+        if self.actions:
+            action_form = self.action_form(auto_id=None)
+            action_form.fields['action'].choices = self.get_action_choices(request)
+            return action_form
+        else:
+            return None
+
+    def get_action_checkbox(self, obj):
+        """
+        A list_display column containing a checkbox widget.
+        """
+        return checkbox.render('_selected_action', force_text(obj.pk))
+        action_checkbox.short_description = mark_safe('<input type="checkbox" id="action-toggle" />')
+
+    def get_action_choices(self, request, default_choices=BLANK_CHOICE_DASH):
+        """
+        Return a list of choices for use in a form object.  Each choice is a
+        tuple (name, description).
+        """
+        choices = [] + default_choices
+        for func, name, description in six.itervalues(self.get_actions(request)):
+            choice = (name, description)
+            choices.append(choice)
+        return choices
+
+    def get_action(self, action):
+        """
+        Return a given action from a parameter, which can either be a callable,
+        or the name of a method on the ModelAdmin.  Return is a tuple of
+        (callable, name, description).
+        """
+        # If the action is a callable, just use it.
+        if callable(action):
+            func = action
+            action = action.__name__
+
+        # Next, look for a method. Grab it off self.__class__ to get an unbound
+        # method instead of a bound one; this ensures that the calling
+        # conventions are the same for functions and methods.
+        elif hasattr(self.__class__, action):
+            func = getattr(self.__class__, action)
+
+        if hasattr(func, 'short_description'):
+            description = func.short_description
+        else:
+            description = capfirst(action.replace('_', ' '))
+        return func, action, description
+
+    def get_actions(self, request):
+        if self.actions is None:
+            return OrderedDict()
+
+        actions = []
+
+        for func in self.actions:
+            actions.append(self.get_action(func))
+
+        # get_action might have returned None, so filter any of those out.
+        actions = filter(None, actions)
+
+        # Convert the actions into an OrderedDict keyed by name.
+        actions = OrderedDict(
+            (name, (func, name, desc))
+            for func, name, desc in actions
+        )
+
+        return actions
 
 
 class RoleAuthentication(object):

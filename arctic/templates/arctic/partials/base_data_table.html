@@ -23,9 +23,18 @@
     {% endblock %}
 
     {% if action_form %}
-        <form action="" method="POST" class="col-6 col-md-3 push-left list-inline-search">
-            {{ action_form }}
-        </form>
+        <div class="col-6 col-md-3 push-left list-inline-action">
+              <div class="input-group-btn">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Actions
+                </button>
+                <div class="dropdown-menu">
+                    {% for value, text in action_form.action.field.choices %}
+                        <a class="dropdown-item" href="#" onclick="$('#action-form input[name=action]').val('{{value}}');$('#action-form').submit();">{{ text }}</a>
+                    {% endfor %}
+                </div>
+              </div>
+        </div>
     {% endif %}
 
     {% if simple_search_form or advanced_search_form %}
@@ -63,6 +72,10 @@
 </div>
 
 {% block table %}
+
+<form action="" method="POST" id="action-form">
+    {% csrf_token %}
+    {{ action_form }}
 <div class="row">
     {# data table #}
     {% if list_items %}
@@ -153,6 +166,7 @@
     {% endif %}
     </div>
 </div>
+</form>
 {% endblock %}
 
 {% block extra_data %}{% endblock %}
