@@ -291,7 +291,7 @@ class ListView(View, ListMixin, base.ListView):
     def post(self, request, *args, **kwargs):
         response = self.get(request, *args, **kwargs)
 
-        selected_rows = request.POST.get('_selected_action', [])
+        selected_rows = request.POST.getlist('_selected_action', [])
         action_name = request.POST.get('action', None)
 
         if selected_rows and action_name:
