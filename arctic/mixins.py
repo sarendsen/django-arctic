@@ -572,6 +572,7 @@ class ListMixin(object):
         (callable, name, description).
         """
         # If the action is a callable, just use it.
+        func = None
         if callable(action):
             func = action
             action = action.__name__
@@ -579,6 +580,12 @@ class ListMixin(object):
         # Next, look for a method. Grab it off self.__class__ to get an unbound
         # method instead of a bound one; this ensures that the calling
         # conventions are the same for functions and methods.
+        if not func:
+            for ac in self.actions:
+                if ac.__name__ == action:
+                    func = ac
+                    action = ac.__name__
+                    break
         elif hasattr(self.__class__, action):
             func = getattr(self.__class__, action)
 
