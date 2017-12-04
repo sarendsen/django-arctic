@@ -293,10 +293,13 @@ class ListView(View, ListMixin, base.ListView):
 
         selected_rows = request.POST.getlist('_selected_action', [])
         action_name = request.POST.get('action', None)
+        select_across = request.POST.get('select_across', None)
 
-        if selected_rows and action_name:
+        if (selected_rows or select_across) and action_name:
             func, action, description = self.get_action(action_name)
-            qs = self.get_queryset().filter(pk__in=selected_rows)
+            qs = self.object_list
+            if not select_across:
+                qs = qs.filter(pk__in=selected_rows)
             return func(request, qs)
 
         return response

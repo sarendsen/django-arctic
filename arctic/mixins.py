@@ -363,8 +363,7 @@ class ActionForm(forms.Form):
     select_across = forms.BooleanField(
         label='',
         required=False,
-        initial=0,
-        widget=forms.HiddenInput({'class': 'select-across'}),
+        initial=False
     )
 
 checkbox = forms.CheckboxInput({'class': 'action-select form-control'}, lambda value: False)
