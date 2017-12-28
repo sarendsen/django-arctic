@@ -19,6 +19,7 @@ from django.utils.http import (is_safe_url, quote)
 from django.utils.text import capfirst
 from django.utils.translation import ugettext as _
 from django.utils.translation import get_language
+from django.utils.html import mark_safe
 from django.views import generic as base
 
 from .mixins import (FormMediaMixin, FormMixin, ListMixin, RoleAuthentication,
@@ -347,8 +348,12 @@ class ListView(View, ListMixin, base.ListView):
         model = self.object_list.model
         result = []
         if self.actions:
+            action_form = self.get_action_form(self.request)
             result.append({
-                'name': '',
+                'name': 'select',
+                'label': mark_safe(action_form['select_across']),
+                'verbose': str(action_form['select_across'].label),
+
             })
 
         if not self.get_fields():

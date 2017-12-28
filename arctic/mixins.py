@@ -361,7 +361,7 @@ class FormMixin(object):
 class ActionForm(forms.Form):
     action = forms.ChoiceField(label='', widget=forms.HiddenInput())
     select_across = forms.BooleanField(
-        label='',
+        label='Select all',
         required=False,
         initial=False
     )

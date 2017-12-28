@@ -75,6 +75,11 @@
 
 <form action="" method="POST" id="action-form">
     {% csrf_token %}
+    {% if action_form %}
+        <th>
+            {{ action_form.action }}
+        </th>
+    {% endif %}
 <div class="row">
     {# data table #}
     {% if list_items %}
@@ -91,12 +96,12 @@
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
-                                {% if action_form %}
+<!--                                 {% if action_form %}
                                     <th>
                                         {{ action_form.select_across }}
                                         {{ action_form.action }}
                                     </th>
-                                {% endif %}
+                                {% endif %} -->
                                 {% for item in list_header %}
                                     <th>
                                         {% if item.order_url %}
