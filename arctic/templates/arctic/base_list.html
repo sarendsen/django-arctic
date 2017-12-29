@@ -8,3 +8,13 @@
         {% block extra_data %}{% endblock %}
     {% endblock %}
 {% endblock %}
+
+
+{% block scripts_bottom %}
+    {{ block.super}}
+    <script>
+        $("input[name=select_across]").on("click",function(){
+            $("input[name=_selected_action]").prop("checked",$(this).prop("checked"));
+        });
+    </script>
+{% endblock %}

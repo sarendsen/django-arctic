@@ -1,5 +1,6 @@
 {% load i18n staticfiles arctic_tags %}
 
+
 <div class="row">
     {% block tool_links %}
         <div class="col">
@@ -19,23 +20,24 @@
                 {% endif %}
                 </div>
             {% endif %}
+            {% if action_form %}
+                
+                      <div class="input-group-btn">
+                        <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Actions
+                        </button>
+                        <div class="dropdown-menu">
+                            {% for value, text in action_form.action.field.choices %}
+                                <a class="dropdown-item" href="#" onclick="$('#action-form input[name=action]').val('{{value}}');$('#action-form').submit();">{{ text }}</a>
+                            {% endfor %}
+                        </div>
+                      </div>
+         
+            {% endif %}
         </div>
     {% endblock %}
 
-    {% if action_form %}
-        <div class="col-6 col-md-3 push-left list-inline-action">
-              <div class="input-group-btn">
-                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Actions
-                </button>
-                <div class="dropdown-menu">
-                    {% for value, text in action_form.action.field.choices %}
-                        <a class="dropdown-item" href="#" onclick="$('#action-form input[name=action]').val('{{value}}');$('#action-form').submit();">{{ text }}</a>
-                    {% endfor %}
-                </div>
-              </div>
-        </div>
-    {% endif %}
+
 
     {% if simple_search_form or advanced_search_form %}
         <form action="" method="GET" class="col-12 col-md-6 push-right list-inline-search">
@@ -96,12 +98,6 @@
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
-<!--                                 {% if action_form %}
-                                    <th>
-                                        {{ action_form.select_across }}
-                                        {{ action_form.action }}
-                                    </th>
-                                {% endif %} -->
                                 {% for item in list_header %}
                                     <th>
                                         {% if item.order_url %}
